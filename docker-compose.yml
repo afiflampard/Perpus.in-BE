@@ -1,0 +1,26 @@
+version: "3.3"
+
+volumes:
+  pg_data:
+    driver: local
+  mongodb_data_container: 
+
+networks:
+  backend:
+    driver: bridge
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: bee
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_MULTIPLE_DATABASES=bee1,bee2
+      - POSTGRES_PASSWORD=password
+    restart: always
+    volumes:
+      - ./beedata:/var/lib/postgresql/data_bee
+    ports:
+      - 5432:5432
+    networks:
+      - backend
