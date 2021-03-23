@@ -1,13 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"onboarding/controller"
 	"onboarding/middleware"
 	"onboarding/models"
+	"os"
 
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -16,6 +19,9 @@ func main() {
 
 	router.HandleFunc("/", index)
 
+	godotenv.Load()
+	port := os.Getenv("PORT")
+	fmt.Println(port)
 	subRouter := router.PathPrefix("/user").Subrouter()
 	subProtectedRouter := router.PathPrefix("/user").Subrouter()
 
@@ -47,7 +53,7 @@ func main() {
 	subProtectedRouter.HandleFunc("/v1/listBorrow", controller.ListBorrow).Methods("GET")
 
 	//router.PathPrefix("/swagger").Handler(httpSwagger.WrapHandler)
-	log.Fatal(http.ListenAndServe(":8000", router))
+	log.Fatal(http.ListenAndServe(":"+port, router))
 }
 
 func HelloWorld(w http.ResponseWriter, r *http.Request) {
