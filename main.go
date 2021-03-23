@@ -54,6 +54,10 @@ func main() {
 
 	//router.PathPrefix("/swagger").Handler(httpSwagger.WrapHandler)
 	log.Fatal(http.ListenAndServe(":"+port, router))
+	err := http.ListenAndServe(":"+port, router)
+	if err != nil {
+		fmt.Print(err)
+	}
 }
 
 func HelloWorld(w http.ResponseWriter, r *http.Request) {
