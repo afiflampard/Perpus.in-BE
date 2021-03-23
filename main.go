@@ -19,6 +19,8 @@ func main() {
 	subRouter := router.PathPrefix("/user").Subrouter()
 	subProtectedRouter := router.PathPrefix("/user").Subrouter()
 
+	subRouter.HandleFunc("/v1/test", HelloWorld).Methods("GET")
+
 	subRouter.HandleFunc("/v1/signup", controller.CreateAccount).Methods("POST")
 	subRouter.HandleFunc("/v1/login", controller.Authenticate).Methods("POST")
 	//router.HandleFunc("/api/v1/user/signup", controller.CreateAccount).Methods("POST")
@@ -46,6 +48,12 @@ func main() {
 
 	//router.PathPrefix("/swagger").Handler(httpSwagger.WrapHandler)
 	log.Fatal(http.ListenAndServe(":8000", router))
+}
+
+func HelloWorld(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Server is running"))
 }
 
 func index(w http.ResponseWriter, r *http.Request) {
