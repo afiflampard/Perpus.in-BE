@@ -20,9 +20,9 @@ func Init() {
 	pgPassword := os.Getenv("PGPASSWORD")
 	pgDB := os.Getenv("PGDATABASE")
 	pgHost := os.Getenv("PGHOST")
-	pgPort := os.Getenv("PGPORT")
+	//pgPort := os.Getenv("PGPORT")
 
-	postgresConname := fmt.Sprintf("host=%v port=%v user=%v dbname=%v password=%v sslmode=disable", pgHost, pgPort, pgName, pgDB, pgPassword)
+	postgresConname := fmt.Sprintf("host=%s user=%s dbname=%s sslmode=disable password=%s", pgHost, pgName, pgDB, pgPassword)
 	fmt.Println("canname is\t\t", postgresConname)
 
 	db, err := gorm.Open(postgres.Open(postgresConname), &gorm.Config{})
