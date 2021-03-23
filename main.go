@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"onboarding/controller"
 	"onboarding/middleware"
+	"onboarding/models"
 	"os"
 
 	"github.com/gorilla/mux"
@@ -13,7 +14,7 @@ import (
 )
 
 func main() {
-	//models.Init()
+	models.Init()
 	router := mux.NewRouter()
 
 	router.HandleFunc("/", index)
