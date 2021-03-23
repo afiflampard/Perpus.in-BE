@@ -8,7 +8,6 @@ import (
 	"onboarding/models"
 
 	"github.com/gorilla/mux"
-	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 func main() {
@@ -45,7 +44,7 @@ func main() {
 
 	subProtectedRouter.HandleFunc("/v1/listBorrow", controller.ListBorrow).Methods("GET")
 
-	router.PathPrefix("/swagger").Handler(httpSwagger.WrapHandler)
+	//router.PathPrefix("/swagger").Handler(httpSwagger.WrapHandler)
 	log.Fatal(http.ListenAndServe(":8000", router))
 }
 
