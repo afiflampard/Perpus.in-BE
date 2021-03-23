@@ -21,7 +21,6 @@ var CreateBook = func(w http.ResponseWriter, r *http.Request) {
 	newBook := &models.Book{}
 	err = json.NewDecoder(r.Body).Decode(newBook)
 
-	fmt.Println(newBook)
 	resp, _ := newBook.Create(conn, uint(id))
 	helpers.ResponseWithJson(w, 200, resp)
 }
