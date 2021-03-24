@@ -60,3 +60,14 @@ var ListBorrow = func(w http.ResponseWriter, r *http.Request) {
 	}
 	helpers.ResponseWithJson(w, http.StatusAccepted, resp)
 }
+
+var ListReturnBook = func(w http.ResponseWriter, r *http.Request) {
+	conn := getDB()
+
+	listReturn := &models.OrderDetail{}
+	resp, err := listReturn.ReturnBook(conn, w)
+	if err != nil {
+		helpers.ResponseWithError(w, http.StatusBadRequest, "Not Found")
+	}
+	helpers.ResponseWithJson(w, http.StatusAccepted, resp)
+}

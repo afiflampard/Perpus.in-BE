@@ -225,3 +225,17 @@ func (borrow *OrderDetail) ListBorrow(conn *gorm.DB, w http.ResponseWriter) ([]O
 
 	return borrows, nil
 }
+
+func (borrow *OrderDetail) ReturnBook(conn *gorm.DB, w http.ResponseWriter) ([]OrderDetail, error) {
+	var tempReturnBooks []OrderDetail
+	if err := conn.Preload("Borrow.User").Preload("Borrow.OrderState").Preload("Buku").Find(&tempReturnBooks).Error; err != nil {
+		helpers.ResponseWithError(w, http.StatusBadRequest, "OrderDetail Not Found")
+	}
+	var borrows []OrderDetail
+	for index := 0; index < len(tempReturnBooks); index++ {
+		if tempReturnBooks[index].Borrow.NoState == 2 {
+			borrows = append(borrows, tempReturnBooks...)
+		}
+	}
+	return borrows, nil
+}
