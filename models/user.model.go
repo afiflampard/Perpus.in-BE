@@ -103,7 +103,7 @@ func (user *User) Login(conn *gorm.DB, mobile string, email string, password str
 }
 
 func (user *User) GetUserById(conn *gorm.DB, id uint) (*User, error) {
-	if err := conn.Where("id = ?", id).First(&user).Error; err != nil {
+	if err := conn.Where("id = ?", id).Preload("Role").First(&user).Error; err != nil {
 		return nil, err
 	}
 	return user, nil

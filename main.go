@@ -50,6 +50,7 @@ func main() {
 	subProtectedRouter.HandleFunc("/v1/return/{id}", controller.ReturnBook).Methods("POST")
 
 	subProtectedRouter.HandleFunc("/v1/listBorrow", controller.ListBorrow).Methods("GET")
+	subProtectedRouter.HandleFunc("/v1/listReturn", controller.ListReturnBook).Methods("GET")
 
 	//router.PathPrefix("/swagger").Handler(httpSwagger.WrapHandler)
 	//log.Fatal(http.ListenAndServe(":"+port, router))
