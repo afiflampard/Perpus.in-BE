@@ -22,7 +22,7 @@ func Init() {
 	pgHost := os.Getenv("PGHOST")
 	pgPort := os.Getenv("PGPORT")
 
-	postgresConname := fmt.Sprintf("host=%s user=%s dbname=%s sslmode=enable password=%s port=%v", pgHost, pgName, pgDB, pgPassword, pgPort)
+	postgresConname := fmt.Sprintf("host=%s user=%s dbname=%s password=%s port=%v", pgHost, pgName, pgDB, pgPassword, pgPort)
 	fmt.Println("canname is\t\t", postgresConname)
 
 	db, err := gorm.Open(postgres.Open(postgresConname), &gorm.Config{})
@@ -110,7 +110,7 @@ func GetDB() *gorm.DB {
 	pgHost := os.Getenv("PGHOST")
 	pgPort := os.Getenv("PGPORT")
 
-	postgresConname := fmt.Sprintf("host=%v port=%v user=%v dbname=%v password=%v sslmode=disable", pgHost, pgPort, pgName, pgDB, pgPassword)
+	postgresConname := fmt.Sprintf("host=%v port=%v user=%v dbname=%v password=%v ", pgHost, pgPort, pgName, pgDB, pgPassword)
 	fmt.Println("canname is\t\t", postgresConname)
 
 	db, err := gorm.Open(postgres.Open(postgresConname), &gorm.Config{})
