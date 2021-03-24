@@ -47,7 +47,7 @@ type ReturnBook struct {
 
 const layoutFormat = "2006-01-02"
 
-func (borrow *RequestPinjam) PinjamBuku(conn *gorm.DB, idMember uint, idBuku string, w http.ResponseWriter) ([]Borrow, error) {
+func (borrow *RequestPinjam) PinjamBuku(conn *gorm.DB, idMember uint, idBuku string, w http.ResponseWriter) (Borrow, error) {
 	var book []Book
 	var member User
 	var stock []Stock
@@ -67,32 +67,30 @@ func (borrow *RequestPinjam) PinjamBuku(conn *gorm.DB, idMember uint, idBuku str
 	}
 
 	if err := conn.Model(&member).Preload("Role").Find(&member, idMember).Error; err != nil {
-		return nil, err
+		helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Request User")
 	}
 	if err := conn.Where("book_id IN ?", tempIdBuku).Find(&stock).Error; err != nil {
-		return nil, err
+		helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Request Book")
 	}
 
 	t, _ := time.Parse(layoutFormat, borrow.TanggalKembali)
-	var pinjam []Borrow
+	var pinjam Borrow
 	if strings.ToLower(member.Role.Role) == "member" {
 		if len(book) == 1 {
 			u64, _ := strconv.ParseUint(tempJumlahBuku[0], 10, 32)
-			pinjam = []Borrow{
-				Borrow{
-					TanggalPeminjaman: time.Now(),
-					TanggalKembali:    t,
-					IDUser:            member.ID,
-					NoState:           1,
-					Total:             uint(book[0].Price) * uint(u64),
-				},
+			pinjam = Borrow{
+				TanggalPeminjaman: time.Now(),
+				TanggalKembali:    t,
+				IDUser:            member.ID,
+				NoState:           1,
+				Total:             uint(book[0].Price) * uint(u64),
 			}
 			err := conn.Debug().Create(&pinjam).Error
 			if err != nil {
 				helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Save Pinjam")
 			}
 			orderdetail := OrderDetail{
-				IDBorrow: pinjam[0].ID,
+				IDBorrow: pinjam.ID,
 				IDBuku:   book[0].ID,
 			}
 			err = conn.Debug().Create(&orderdetail).Error
@@ -103,8 +101,8 @@ func (borrow *RequestPinjam) PinjamBuku(conn *gorm.DB, idMember uint, idBuku str
 			conn.Save(&stock)
 			history := History{
 				IDBuku:   book[0].ID,
-				IDBorrow: pinjam[0].ID,
-				NoState:  pinjam[0].NoState,
+				IDBorrow: pinjam.ID,
+				NoState:  pinjam.NoState,
 			}
 			err = conn.Debug().Create(&history).Error
 			if err != nil {
@@ -113,32 +111,37 @@ func (borrow *RequestPinjam) PinjamBuku(conn *gorm.DB, idMember uint, idBuku str
 		} else {
 			for index := 0; index < len(book); index++ {
 				u64, _ := strconv.ParseUint(tempJumlahBuku[index], 10, 32)
-				pinjam[index] = Borrow{
+				pinjam = Borrow{
 					TanggalPeminjaman: time.Now(),
 					TanggalKembali:    t,
 					IDUser:            member.ID,
 					NoState:           1,
 					Total:             uint(book[index].Price) * uint(u64),
 				}
-				err := conn.Debug().Preload("User").Create(&pinjam[index]).Error
+				fmt.Println("Indexnya adalah", index)
+				err := conn.Debug().Preload("User").Create(&pinjam).Error
 				if err != nil {
 					helpers.ResponseWithError(w, http.StatusBadRequest, "Cannot save Borrow")
 				}
+
 				orderdetail := OrderDetail{
-					IDBorrow: pinjam[index].ID,
+					IDBorrow: pinjam.ID,
 					IDBuku:   book[index].ID,
 				}
+				fmt.Println("Harusnya kesini")
 				err = conn.Debug().Create(&orderdetail).Error
 				if err != nil {
 					helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Save orderDetail")
 				}
+
 				stock[index].Qty = stock[index].Qty - uint(u64)
 				conn.Save(&stock[index])
 
 				history := History{
+
 					IDBuku:   book[index].ID,
-					IDBorrow: pinjam[index].ID,
-					NoState:  pinjam[index].NoState,
+					IDBorrow: pinjam.ID,
+					NoState:  pinjam.NoState,
 				}
 				err = conn.Debug().Create(&history).Preload("User").Error
 				if err != nil {
