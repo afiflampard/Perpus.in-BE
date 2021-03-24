@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"onboarding/controller"
 	"onboarding/middleware"
@@ -53,7 +52,7 @@ func main() {
 	subProtectedRouter.HandleFunc("/v1/listBorrow", controller.ListBorrow).Methods("GET")
 
 	//router.PathPrefix("/swagger").Handler(httpSwagger.WrapHandler)
-	log.Fatal(http.ListenAndServe(":"+port, router))
+	//log.Fatal(http.ListenAndServe(":"+port, router))
 	err := http.ListenAndServe(":"+port, router)
 	if err != nil {
 		fmt.Print(err)
