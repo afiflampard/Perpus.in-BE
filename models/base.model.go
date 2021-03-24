@@ -29,10 +29,10 @@ func Init() {
 	if err != nil {
 		panic(err)
 	}
-	// dbMigrate := db.Debug().Migrator().DropTable(&User{}, &Role{}, &Book{}, &Borrow{}, &OrderState{}, &OrderDetail{}, &History{}, &Stock{})
-	// if dbMigrate != nil {
-	// 	log.Fatal("Cannot drop Table")
-	// }
+	dbMigrate := db.Debug().Migrator().DropTable(&User{}, &Role{}, &Book{}, &Borrow{}, &OrderState{}, &OrderDetail{}, &History{}, &Stock{})
+	if dbMigrate != nil {
+		log.Fatal("Cannot drop Table")
+	}
 	db.AutoMigrate(&User{}, &Role{}, &Book{}, &Borrow{}, &OrderState{}, &OrderDetail{}, &History{}, &Stock{})
 
 	var roles = []Role{
