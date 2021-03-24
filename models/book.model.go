@@ -33,7 +33,7 @@ func (book *Book) Create(conn *gorm.DB, id uint) (helpers.MessageResponse, *Book
 		return *helpers.MessageResponses(false, http.StatusUnprocessableEntity, "Tidak bisa"), nil
 	}
 	var addBuku Book
-	fmt.Println(petugas)
+
 	if strings.ToLower(petugas.Role.Role) == "petugas" {
 		addBuku = Book{
 			Name:     book.Name,
