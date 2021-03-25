@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"onboarding/helpers"
 	"strconv"
@@ -37,8 +38,8 @@ type OrderDetail struct {
 }
 
 type RequestPinjam struct {
-	TanggalKembali string     `json:"tanggal_kembali"`
-	DetailBuku     DetailBuku `json:"detail_buku"`
+	TanggalKembali string       `json:"tanggal_kembali"`
+	DetailBuku     []DetailBuku `json:"detail_buku"`
 }
 
 type DetailBuku struct {
@@ -47,7 +48,7 @@ type DetailBuku struct {
 }
 
 type ReturnBook struct {
-	DetailBuku DetailBuku `json:"detail_buku"`
+	DetailBuku []DetailBuku `json:"detail_buku"`
 }
 
 const layoutFormat = "2006-01-02"
@@ -59,13 +60,17 @@ func (borrow *RequestPinjam) PinjamBuku(conn *gorm.DB, idMember uint, w http.Res
 	var tempIdBuku []string
 	var tempJumlahBuku []string
 
-	if strings.Contains(borrow.DetailBuku.IDBuku, ",") {
-		tempIdBuku = append(tempIdBuku, strings.Split(borrow.DetailBuku.IDBuku, ",")...)
-		tempJumlahBuku = append(tempJumlahBuku, strings.Split(borrow.DetailBuku.BanyakBuku, ",")...)
+	if len(borrow.DetailBuku) <= 1 {
+		tempIdBuku = append(tempIdBuku, borrow.DetailBuku[0].IDBuku)
+		tempJumlahBuku = append(tempJumlahBuku, borrow.DetailBuku[0].BanyakBuku)
 	} else {
-		tempIdBuku = append(tempIdBuku, borrow.DetailBuku.IDBuku)
-		tempJumlahBuku = append(tempJumlahBuku, borrow.DetailBuku.BanyakBuku)
+		for index := 0; index < len(borrow.DetailBuku); index++ {
+			tempIdBuku = append(tempIdBuku, borrow.DetailBuku[index].IDBuku)
+			tempJumlahBuku = append(tempJumlahBuku, borrow.DetailBuku[index].BanyakBuku)
+		}
 	}
+
+	fmt.Println(tempIdBuku)
 
 	if err := conn.Where("id IN ?", tempIdBuku).Find(&book).Error; err != nil {
 		helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Request Book")
@@ -114,7 +119,9 @@ func (borrow *RequestPinjam) PinjamBuku(conn *gorm.DB, idMember uint, w http.Res
 				helpers.ResponseWithError(w, http.StatusBadRequest, "Tidak bisa Menyimpan History")
 			}
 		} else {
+			fmt.Print(len(book))
 			for index := 0; index < len(book); index++ {
+				fmt.Println("Masuk Sini")
 				u64, _ := strconv.ParseUint(tempJumlahBuku[index], 10, 32)
 				pinjam = Borrow{
 					TanggalPeminjaman: time.Now(),
@@ -167,13 +174,17 @@ func (borrow *ReturnBook) ReturnBook(conn *gorm.DB, idMember uint, w http.Respon
 	var member User
 
 	var orderDetail []OrderDetail
-	if strings.Contains(borrow.DetailBuku.BanyakBuku, ",") {
-		tempIdBuku = append(tempIdBuku, strings.Split(borrow.DetailBuku.IDBuku, ",")...)
-		tempJumlahBuku = append(tempJumlahBuku, strings.Split(borrow.DetailBuku.BanyakBuku, ",")...)
+
+	if len(borrow.DetailBuku) <= 1 {
+		tempIdBuku = append(tempIdBuku, borrow.DetailBuku[0].IDBuku)
+		tempJumlahBuku = append(tempJumlahBuku, borrow.DetailBuku[0].BanyakBuku)
 	} else {
-		tempIdBuku = append(tempIdBuku, borrow.DetailBuku.IDBuku)
-		tempJumlahBuku = append(tempJumlahBuku, borrow.DetailBuku.BanyakBuku)
+		for index := 0; index < len(borrow.DetailBuku); index++ {
+			tempIdBuku = append(tempIdBuku, borrow.DetailBuku[index].IDBuku)
+			tempJumlahBuku = append(tempJumlahBuku, borrow.DetailBuku[index].BanyakBuku)
+		}
 	}
+
 	if err := conn.Model(&member).Preload("Role").Find(&member, idMember).Error; err != nil {
 		helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Request User")
 	}
@@ -196,23 +207,37 @@ func (borrow *ReturnBook) ReturnBook(conn *gorm.DB, idMember uint, w http.Respon
 			helpers.ResponseWithError(w, http.StatusBadRequest, "Stock Melebihi Max Stock")
 		}
 	}
-	for indexCount := 0; indexCount < len(orderDetail); indexCount++ {
+	var tempHistories []History
+
+	fmt.Println("Order Detailnya adalah ", len(orderDetail))
+	for indexCount := 0; indexCount < len(borrow.DetailBuku); indexCount++ {
 		u64, _ := strconv.ParseUint(tempJumlahBuku[indexCount], 10, 32)
 		idBukus, _ := strconv.ParseUint(tempIdBuku[indexCount], 10, 32)
+		fmt.Println("Masuk Sini")
 		borrows[indexCount].NoState = 2
 		stock[indexCount].Qty = Calculasi(stock[indexCount].Qty, "+", uint(u64))
-		conn.Save(&borrows[indexCount])
-		conn.Save(&stock[indexCount])
-		history := History{
+		conn.Save(&borrows)
+		conn.Save(&stock)
+		fmt.Println("Indeksnya : ", indexCount)
+		fmt.Println("Panjangnya adalah : ", len(tempHistories))
+
+		tempHistories = append(tempHistories, History{
 			IDBuku:   uint(idBukus),
 			IDBorrow: orderDetail[indexCount].Borrow.ID,
-			NoState:  2,
-		}
+			NoState:  borrows[indexCount].NoState,
+		})
+	}
+
+	for index := 0; index < len(tempHistories); index++ {
+		fmt.Println("ID BUKU", tempHistories[index].IDBuku)
+	}
+	for _, history := range tempHistories {
 		err := conn.Debug().Create(&history).Error
 		if err != nil {
-			helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Save")
+			log.Fatalf("Failed to create History")
 		}
 	}
+
 	return borrows, nil
 }
 
