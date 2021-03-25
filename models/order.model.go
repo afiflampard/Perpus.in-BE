@@ -3,6 +3,7 @@ package models
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"onboarding/helpers"
 	"strconv"
@@ -15,6 +16,7 @@ import (
 type Borrow struct {
 	gorm.Model
 	TanggalPeminjaman time.Time  `gorm:"column:tanggal_peminjaman" json:"tanggal_peminjaman"`
+	KodeBorrow        int        `gorm:"kode_borrow" json:"kode_borrow"`
 	TanggalKembali    time.Time  `gorm:"column:tanggal_kembali" json:"tanggal_kembali"`
 	IDUser            uint       `gorm:"column:user_id" json:"userId"`
 	User              User       `gorm:"foreignKey:IDUser"`
@@ -35,6 +37,7 @@ type OrderDetail struct {
 	IDBuku   uint   `gorm:"column:buku_id"`
 	Buku     Book   `gorm:"foreignKey:IDBuku"`
 	Borrow   Borrow `gorm:"foreignKey:IDBorrow"`
+	Qty      uint   `gorm:"column:qty" json:"qty"`
 }
 
 type RequestPinjam struct {
@@ -88,8 +91,10 @@ func (borrow *RequestPinjam) PinjamBuku(conn *gorm.DB, idMember uint, w http.Res
 	if strings.ToLower(member.Role.Role) == "member" {
 		if len(book) == 1 {
 			u64, _ := strconv.ParseUint(tempJumlahBuku[0], 10, 32)
+
 			pinjam = Borrow{
 				TanggalPeminjaman: time.Now(),
+				KodeBorrow:        rand.Int(),
 				TanggalKembali:    t,
 				IDUser:            member.ID,
 				NoState:           1,
@@ -102,6 +107,7 @@ func (borrow *RequestPinjam) PinjamBuku(conn *gorm.DB, idMember uint, w http.Res
 			orderdetail := OrderDetail{
 				IDBorrow: pinjam.ID,
 				IDBuku:   book[0].ID,
+				Qty:      uint(u64),
 			}
 			err = conn.Debug().Create(&orderdetail).Error
 			if err != nil {
@@ -119,18 +125,18 @@ func (borrow *RequestPinjam) PinjamBuku(conn *gorm.DB, idMember uint, w http.Res
 				helpers.ResponseWithError(w, http.StatusBadRequest, "Tidak bisa Menyimpan History")
 			}
 		} else {
-			fmt.Print(len(book))
+			kodeBorrow := rand.Int()
 			for index := 0; index < len(book); index++ {
-				fmt.Println("Masuk Sini")
 				u64, _ := strconv.ParseUint(tempJumlahBuku[index], 10, 32)
 				pinjam = Borrow{
+					KodeBorrow:        kodeBorrow,
 					TanggalPeminjaman: time.Now(),
 					TanggalKembali:    t,
 					IDUser:            member.ID,
 					NoState:           1,
 					Total:             Calculasi(uint(book[index].Price), "*", uint(u64)),
 				}
-				fmt.Println("Indexnya adalah", index)
+
 				err := conn.Debug().Preload("User").Create(&pinjam).Error
 				if err != nil {
 					helpers.ResponseWithError(w, http.StatusBadRequest, "Cannot save Borrow")
@@ -139,8 +145,9 @@ func (borrow *RequestPinjam) PinjamBuku(conn *gorm.DB, idMember uint, w http.Res
 				orderdetail := OrderDetail{
 					IDBorrow: pinjam.ID,
 					IDBuku:   book[index].ID,
+					Qty:      uint(u64),
 				}
-				fmt.Println("Harusnya kesini")
+
 				err = conn.Debug().Create(&orderdetail).Error
 				if err != nil {
 					helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Save orderDetail")
@@ -170,9 +177,10 @@ func (borrow *ReturnBook) ReturnBook(conn *gorm.DB, idMember uint, w http.Respon
 	var tempIdBuku []string
 	var tempJumlahBuku []string
 	var stock []Stock
-	var borrows []Borrow
+
 	var member User
 
+	var tempBorrows []Borrow
 	var orderDetail []OrderDetail
 
 	if len(borrow.DetailBuku) <= 1 {
@@ -185,10 +193,19 @@ func (borrow *ReturnBook) ReturnBook(conn *gorm.DB, idMember uint, w http.Respon
 		}
 	}
 
+	if err := conn.Where("user_id = ? AND state_no = ?", idMember, 1).Find(&tempBorrows).Error; err != nil {
+		helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid fetch borrows")
+	}
+
+	var tempBorrowId []uint
+	for index := 0; index < len(tempBorrows); index++ {
+		tempBorrowId = append(tempBorrowId, tempBorrows[index].ID)
+	}
+
 	if err := conn.Model(&member).Preload("Role").Find(&member, idMember).Error; err != nil {
 		helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Request User")
 	}
-	if err := conn.Model(&orderDetail).Where("buku_id IN ?", tempIdBuku).Preload("Borrow").Find(&orderDetail).Error; err != nil {
+	if err := conn.Model(&orderDetail).Where("buku_id IN ? AND borrow_id IN ?", tempIdBuku, tempBorrowId).Preload("Borrow").Find(&orderDetail).Error; err != nil {
 		helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid orderDetail")
 	}
 	if err := conn.Model(&stock).Where("book_id IN ?", tempIdBuku).Find(&stock).Error; err != nil {
@@ -199,9 +216,7 @@ func (borrow *ReturnBook) ReturnBook(conn *gorm.DB, idMember uint, w http.Respon
 	for i := 0; i < len(orderDetail); i++ {
 		idBorrow = append(idBorrow, orderDetail[i].IDBorrow)
 	}
-	if err := conn.Where("id IN ?", idBorrow).Find(&borrows).Error; err != nil {
-		helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Borrow	")
-	}
+
 	for index := 0; index < len(stock); index++ {
 		if stock[index].Qty > stock[index].MaxStock {
 			helpers.ResponseWithError(w, http.StatusBadRequest, "Stock Melebihi Max Stock")
@@ -209,22 +224,20 @@ func (borrow *ReturnBook) ReturnBook(conn *gorm.DB, idMember uint, w http.Respon
 	}
 	var tempHistories []History
 
-	fmt.Println("Order Detailnya adalah ", len(orderDetail))
 	for indexCount := 0; indexCount < len(borrow.DetailBuku); indexCount++ {
 		u64, _ := strconv.ParseUint(tempJumlahBuku[indexCount], 10, 32)
 		idBukus, _ := strconv.ParseUint(tempIdBuku[indexCount], 10, 32)
-		fmt.Println("Masuk Sini")
-		borrows[indexCount].NoState = 2
-		stock[indexCount].Qty = Calculasi(stock[indexCount].Qty, "+", uint(u64))
-		conn.Save(&borrows)
-		conn.Save(&stock)
-		fmt.Println("Indeksnya : ", indexCount)
-		fmt.Println("Panjangnya adalah : ", len(tempHistories))
 
+		tempBorrows[indexCount].NoState = 2
+		stock[indexCount].Qty = Calculasi(stock[indexCount].Qty, "+", uint(u64))
+		orderDetail[indexCount].Qty = orderDetail[indexCount].Qty - uint(u64)
+		conn.Save(&orderDetail)
+		conn.Save(&tempBorrows)
+		conn.Save(&stock)
 		tempHistories = append(tempHistories, History{
 			IDBuku:   uint(idBukus),
 			IDBorrow: orderDetail[indexCount].Borrow.ID,
-			NoState:  borrows[indexCount].NoState,
+			NoState:  tempBorrows[indexCount].NoState,
 		})
 	}
 
@@ -238,7 +251,7 @@ func (borrow *ReturnBook) ReturnBook(conn *gorm.DB, idMember uint, w http.Respon
 		}
 	}
 
-	return borrows, nil
+	return tempBorrows, nil
 }
 
 func (borrow *OrderDetail) ListBorrow(conn *gorm.DB, w http.ResponseWriter) ([]OrderDetail, error) {
