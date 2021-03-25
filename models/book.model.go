@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"onboarding/helpers"
+	"sort"
 	"strings"
 	"time"
 
@@ -27,26 +28,38 @@ type Book struct {
 	Fineamt      uint64         `gorm:"column:denda" json:"denda"`
 }
 
-func (book *Book) Create(conn *gorm.DB, id uint) (helpers.MessageResponse, *Book) {
+func (book *Book) Validasi(w http.ResponseWriter) (*Book, error) {
+	if book.Name == "" || book.Author == "" || book.Isbn == "" || book.Isbn13 == "" || book.Language == "" || book.DatePub == "" || book.Pages == 0 || book.Sinopsis == "" || book.Price <= 0 || book.Fineamt <= 0 {
+		helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Reques")
+	}
+	return book, nil
+}
+
+func (book *Book) Create(conn *gorm.DB, id uint, w http.ResponseWriter) (helpers.MessageResponse, *Book) {
 	var petugas User
+
+	resp, err := book.Validasi(w)
+	if err != nil {
+		helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Request")
+	}
+
 	if err := conn.Model(&petugas).Preload("Role").Find(&petugas).First(&petugas, id).Error; err != nil {
 		return *helpers.MessageResponses(false, http.StatusUnprocessableEntity, "Tidak bisa"), nil
 	}
 	var addBuku Book
-	fmt.Println(petugas)
 	if strings.ToLower(petugas.Role.Role) == "petugas" {
 		addBuku = Book{
-			Name:     book.Name,
-			Author:   book.Author,
-			Isbn:     book.Isbn,
-			Isbn13:   book.Isbn13,
-			Genre:    book.Genre,
-			Language: book.Language,
-			DatePub:  book.DatePub,
-			Pages:    book.Pages,
-			Sinopsis: book.Sinopsis,
-			Price:    book.Price,
-			Fineamt:  book.Fineamt,
+			Name:     resp.Name,
+			Author:   resp.Author,
+			Isbn:     resp.Isbn,
+			Isbn13:   resp.Isbn13,
+			Genre:    resp.Genre,
+			Language: resp.Language,
+			DatePub:  resp.DatePub,
+			Pages:    resp.Pages,
+			Sinopsis: resp.Sinopsis,
+			Price:    resp.Price,
+			Fineamt:  resp.Fineamt,
 		}
 		err := conn.Debug().Create(&addBuku).Error
 		if err != nil {
@@ -108,10 +121,54 @@ func (book *Book) NewestBook(conn *gorm.DB) ([]Book, error) {
 	return books, nil
 }
 
-func (stock *Stock) PopulerBook(conn *gorm.DB) ([]Stock, error) {
-	var stocks []Stock
-	if err := conn.Find(&stocks).Order("qty desc").Limit(3).Error; err != nil {
+func (history *History) PopulerBook(conn *gorm.DB) ([]History, error) {
+
+	var tempHistories []History
+	if err := conn.Where("state_no = ?", 1).Preload("Buku").Preload("Order").Find(&tempHistories).Error; err != nil {
 		return nil, err
 	}
-	return stocks, nil
+	if len(tempHistories) < 3 {
+		return tempHistories, nil
+	}
+	var tempID []uint
+	for index := 0; index < len(tempHistories); index++ {
+		tempID = append(tempID, tempHistories[index].IDBuku)
+	}
+	countElement := CountElement(tempID)
+
+	keys := make([]uint, 0, len(countElement))
+	for key := range countElement {
+		keys = append(keys, key)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		return countElement[keys[i]] > countElement[keys[j]]
+	})
+
+	var IdBuku []uint
+	var IdHistory []uint
+	var histories []History
+	for _, key := range keys {
+		IdBuku = append(IdBuku, key)
+	}
+	if len(IdBuku) < 3 {
+		if err := conn.Preload("Order").Preload("Buku").Find(&histories).Error; err != nil {
+			return nil, err
+		}
+	} else {
+		for index := 0; index < 3; index++ {
+			IdHistory = append(IdHistory, IdBuku[index])
+		}
+		if err := conn.Where("buku_id IN ?", IdHistory).Preload("Order").Preload("Buku").Find(&histories).Error; err != nil {
+			return nil, err
+		}
+	}
+	return histories, nil
+}
+
+func CountElement(history []uint) map[uint]uint {
+	var dict = make(map[uint]uint)
+	for _, num := range history {
+		dict[num] = dict[num] + 1
+	}
+	return dict
 }

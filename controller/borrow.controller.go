@@ -15,7 +15,6 @@ var BorrowBuku = func(w http.ResponseWriter, r *http.Request) {
 	conn := getDB()
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
-	idBook := r.URL.Query().Get("idBook")
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -23,7 +22,7 @@ var BorrowBuku = func(w http.ResponseWriter, r *http.Request) {
 	borrow := &models.RequestPinjam{}
 	err = json.NewDecoder(r.Body).Decode(borrow)
 
-	resp, err := borrow.PinjamBuku(conn, uint(id), idBook, w)
+	resp, err := borrow.PinjamBuku(conn, uint(id), w)
 
 	if err != nil {
 		helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Request")
@@ -35,14 +34,14 @@ var ReturnBook = func(w http.ResponseWriter, r *http.Request) {
 	conn := getDB()
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
-	idBook := r.URL.Query().Get("idBook")
+
 	if err != nil {
 		fmt.Println(err)
 	}
 
 	returnBook := &models.ReturnBook{}
 	err = json.NewDecoder(r.Body).Decode(returnBook)
-	resp, err := returnBook.ReturnBook(conn, idBook, uint(id), w)
+	resp, err := returnBook.ReturnBook(conn, uint(id), w)
 
 	if err != nil {
 		helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Input")
@@ -65,7 +64,7 @@ var ListReturnBook = func(w http.ResponseWriter, r *http.Request) {
 	conn := getDB()
 
 	listReturn := &models.OrderDetail{}
-	resp, err := listReturn.ReturnBook(conn, w)
+	resp, err := listReturn.ListReturnBook(conn, w)
 	if err != nil {
 		helpers.ResponseWithError(w, http.StatusBadRequest, "Not Found")
 	}

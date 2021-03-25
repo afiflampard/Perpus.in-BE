@@ -21,7 +21,7 @@ var CreateBook = func(w http.ResponseWriter, r *http.Request) {
 	newBook := &models.Book{}
 	err = json.NewDecoder(r.Body).Decode(newBook)
 
-	resp, _ := newBook.Create(conn, uint(id))
+	resp, _ := newBook.Create(conn, uint(id), w)
 	helpers.ResponseWithJson(w, 200, resp)
 }
 
@@ -82,9 +82,9 @@ var NewestBook = func(w http.ResponseWriter, r *http.Request) {
 
 var PopularBook = func(w http.ResponseWriter, r *http.Request) {
 	conn := getDB()
-	stock := &models.Stock{}
+	histories := &models.History{}
 
-	resp, err := stock.PopulerBook(conn)
+	resp, err := histories.PopulerBook(conn)
 	if err != nil {
 		helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Request")
 	}
