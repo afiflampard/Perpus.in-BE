@@ -121,14 +121,18 @@ func (book *Book) NewestBook(conn *gorm.DB) ([]Book, error) {
 	return books, nil
 }
 
-func (history *History) PopulerBook(conn *gorm.DB) ([]History, error) {
+func (history *History) PopulerBook(conn *gorm.DB) ([]Book, error) {
 
 	var tempHistories []History
 	if err := conn.Where("state_no = ?", 1).Preload("Buku").Preload("Order").Find(&tempHistories).Error; err != nil {
 		return nil, err
 	}
+	var books []Book
 	if len(tempHistories) < 3 {
-		return tempHistories, nil
+		if err := conn.Find(&books).Error; err != nil {
+			return nil, err
+		}
+		return books, nil
 	}
 	var tempID []uint
 	for index := 0; index < len(tempHistories); index++ {
@@ -146,23 +150,24 @@ func (history *History) PopulerBook(conn *gorm.DB) ([]History, error) {
 
 	var IdBuku []uint
 	var IdHistory []uint
-	var histories []History
+	var book []Book
 	for _, key := range keys {
 		IdBuku = append(IdBuku, key)
 	}
+	fmt.Println(IdBuku)
 	if len(IdBuku) < 3 {
-		if err := conn.Preload("Order").Preload("Buku").Find(&histories).Error; err != nil {
+		if err := conn.Where("id IN ?", IdBuku).Find(&book).Error; err != nil {
 			return nil, err
 		}
 	} else {
 		for index := 0; index < 3; index++ {
 			IdHistory = append(IdHistory, IdBuku[index])
 		}
-		if err := conn.Where("buku_id IN ?", IdHistory).Preload("Order").Preload("Buku").Find(&histories).Error; err != nil {
+		if err := conn.Where("id IN ?", IdHistory).Find(&book).Error; err != nil {
 			return nil, err
 		}
 	}
-	return histories, nil
+	return book, nil
 }
 
 func CountElement(history []uint) map[uint]uint {
