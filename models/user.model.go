@@ -111,7 +111,7 @@ func (user *User) GetUserById(conn *gorm.DB, id uint) (*User, error) {
 
 func (user *User) GetUsers(conn *gorm.DB) ([]User, error) {
 	var users []User
-	if err := conn.Find(&users).Error; err != nil {
+	if err := conn.Preload("Role").Find(&users).Error; err != nil {
 		helpers.MessageResponses(false, http.StatusBadRequest, "User Not Foud")
 	}
 	return users, nil
@@ -131,6 +131,7 @@ func (user *User) UpdateUsers(conn *gorm.DB, id uint) (*User, error) {
 		updateUser.Password = string(pass)
 		updateUser.Mobile = user.Mobile
 		updateUser.Address = user.Address
+		updateUser.RoleID = user.RoleID
 		conn.Save(&updateUser)
 	}
 	return &updateUser, nil

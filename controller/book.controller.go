@@ -12,7 +12,6 @@ import (
 )
 
 var CreateBook = func(w http.ResponseWriter, r *http.Request) {
-	conn := getDB()
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
@@ -21,19 +20,18 @@ var CreateBook = func(w http.ResponseWriter, r *http.Request) {
 	newBook := &models.Book{}
 	err = json.NewDecoder(r.Body).Decode(newBook)
 
-	resp, _ := newBook.Create(conn, uint(id), w)
+	resp, _ := newBook.Create(GetDb(), uint(id), w)
 	helpers.ResponseWithJson(w, 200, resp)
 }
 
 var GetBookByID = func(w http.ResponseWriter, r *http.Request) {
-	conn := getDB()
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
 		fmt.Println(err)
 	}
 	book := &models.Book{}
-	resp, err := book.GetBookById(conn, uint(id))
+	resp, err := book.GetBookById(GetDb(), uint(id))
 	if err != nil {
 		helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Request")
 	}
@@ -42,10 +40,9 @@ var GetBookByID = func(w http.ResponseWriter, r *http.Request) {
 }
 
 var GetAllBook = func(w http.ResponseWriter, r *http.Request) {
-	conn := getDB()
 	books := &models.Book{}
 
-	resp, err := books.GetAllBook(conn)
+	resp, err := books.GetAllBook(GetDb())
 	if err != nil {
 		helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Request")
 	}
@@ -53,7 +50,6 @@ var GetAllBook = func(w http.ResponseWriter, r *http.Request) {
 }
 
 var UpdateBook = func(w http.ResponseWriter, r *http.Request) {
-	conn := getDB()
 	params := mux.Vars(r)
 	idUser, err := strconv.Atoi(params["id"])
 	idBook, err := strconv.Atoi(r.URL.Query().Get("idBook"))
@@ -63,17 +59,17 @@ var UpdateBook = func(w http.ResponseWriter, r *http.Request) {
 	}
 	book := &models.Book{}
 	err = json.NewDecoder(r.Body).Decode(book)
-	resp, err := book.UpdateBook(conn, uint(idBook), uint(idUser))
+	resp, err := book.UpdateBook(GetDb(), uint(idBook), uint(idUser))
 	if err != nil {
 		helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Request")
 	}
 	helpers.ResponseWithJson(w, http.StatusAccepted, resp)
 }
 var NewestBook = func(w http.ResponseWriter, r *http.Request) {
-	conn := getDB()
+
 	books := &models.Book{}
 
-	resp, err := books.NewestBook(conn)
+	resp, err := books.NewestBook(GetDb())
 	if err != nil {
 		helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Request")
 	}
@@ -81,10 +77,10 @@ var NewestBook = func(w http.ResponseWriter, r *http.Request) {
 }
 
 var PopularBook = func(w http.ResponseWriter, r *http.Request) {
-	conn := getDB()
-	histories := &models.History{}
 
-	resp, err := histories.PopulerBook(conn)
+	stock := &models.History{}
+
+	resp, err := stock.PopulerBook(GetDb())
 	if err != nil {
 		helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Request")
 	}

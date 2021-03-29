@@ -3,9 +3,10 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"onboarding/config"
 	"onboarding/controller"
 	"onboarding/middleware"
-	"onboarding/models"
+	"onboarding/migrate"
 	"os"
 
 	"github.com/gorilla/mux"
@@ -13,7 +14,12 @@ import (
 )
 
 func main() {
-	models.Init()
+
+	db := config.Init()
+
+	migrate.Migrate(db)
+	controller.InitiateDb(db)
+
 	router := mux.NewRouter()
 
 	router.HandleFunc("/", index)

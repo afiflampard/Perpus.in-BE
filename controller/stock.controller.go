@@ -12,7 +12,6 @@ import (
 )
 
 var CreateStock = func(w http.ResponseWriter, r *http.Request) {
-	conn := getDB()
 	params := mux.Vars(r)
 	idUser, err := strconv.Atoi(params["id"])
 	idBook, err := strconv.Atoi(r.URL.Query().Get("idBook"))
@@ -22,7 +21,7 @@ var CreateStock = func(w http.ResponseWriter, r *http.Request) {
 	stock := &models.Stock{}
 	err = json.NewDecoder(r.Body).Decode(stock)
 
-	resp, err := stock.Create(conn, w, uint(idUser), uint(idBook))
+	resp, err := stock.Create(GetDb(), w, uint(idUser), uint(idBook))
 
 	if err != nil {
 		helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Request")
