@@ -27,5 +27,9 @@ var CreateStock = func(w http.ResponseWriter, r *http.Request) {
 		helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Request")
 	}
 	helpers.ResponseWithJson(w, http.StatusAccepted, resp)
+	conn, err := GetDb().DB()
+	if err != nil {
+		defer conn.Close()
+	}
 
 }

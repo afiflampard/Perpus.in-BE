@@ -21,7 +21,12 @@ var CreateBook = func(w http.ResponseWriter, r *http.Request) {
 	err = json.NewDecoder(r.Body).Decode(newBook)
 
 	resp, _ := newBook.Create(GetDb(), uint(id), w)
+	conn, err := GetDb().DB()
+	if err != nil {
+		defer conn.Close()
+	}
 	helpers.ResponseWithJson(w, 200, resp)
+
 }
 
 var GetBookByID = func(w http.ResponseWriter, r *http.Request) {
@@ -35,6 +40,10 @@ var GetBookByID = func(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Request")
 	}
+	conn, err := GetDb().DB()
+	if err != nil {
+		defer conn.Close()
+	}
 	helpers.ResponseWithJson(w, http.StatusAccepted, resp)
 
 }
@@ -46,7 +55,12 @@ var GetAllBook = func(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Request")
 	}
+	conn, err := GetDb().DB()
+	if err != nil {
+		defer conn.Close()
+	}
 	helpers.ResponseWithJson(w, http.StatusAccepted, resp)
+
 }
 
 var UpdateBook = func(w http.ResponseWriter, r *http.Request) {
@@ -63,7 +77,12 @@ var UpdateBook = func(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Request")
 	}
+	conn, err := GetDb().DB()
+	if err != nil {
+		defer conn.Close()
+	}
 	helpers.ResponseWithJson(w, http.StatusAccepted, resp)
+
 }
 var NewestBook = func(w http.ResponseWriter, r *http.Request) {
 
@@ -73,7 +92,12 @@ var NewestBook = func(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Request")
 	}
+	conn, err := GetDb().DB()
+	if err != nil {
+		defer conn.Close()
+	}
 	helpers.ResponseWithJson(w, http.StatusAccepted, resp)
+
 }
 
 var PopularBook = func(w http.ResponseWriter, r *http.Request) {
@@ -84,5 +108,10 @@ var PopularBook = func(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Request")
 	}
+	conn, err := GetDb().DB()
+	if err != nil {
+		defer conn.Close()
+	}
 	helpers.ResponseWithJson(w, http.StatusAccepted, resp)
+
 }

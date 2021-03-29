@@ -10,12 +10,11 @@ import (
 
 func Migrate(db *gorm.DB) {
 	tableExist := (db.Migrator().HasTable(&models.User{}) && db.Migrator().HasTable(&models.Role{}) && db.Migrator().HasTable(&models.Book{}) && db.Migrator().HasTable(&models.Borrow{}) && db.Migrator().HasTable(&models.OrderState{}) && db.Migrator().HasTable(&models.OrderDetail{}) && db.Migrator().HasTable(&models.History{}) && db.Migrator().HasTable(&models.Stock{}))
-
 	if !tableExist {
-		// dbMigrate := db.Debug().Migrator().DropTable(&models.User{}, &models.Role{}, &models.Book{}, &models.Borrow{}, &models.OrderState{}, &models.OrderDetail{}, &models.History{}, &models.Stock{})
-		// if dbMigrate != nil {
-		// 	log.Fatal("Cannot drop Table")
-		// }
+		dbMigrate := db.Debug().Migrator().DropTable(&models.User{}, &models.Role{}, &models.Book{}, &models.Borrow{}, &models.OrderState{}, &models.OrderDetail{}, &models.History{}, &models.Stock{})
+		if dbMigrate != nil {
+			log.Fatal("Cannot drop Table")
+		}
 		db.AutoMigrate(&models.User{}, &models.Role{}, &models.Book{}, &models.Borrow{}, &models.OrderState{}, &models.OrderDetail{}, &models.History{}, &models.Stock{})
 
 		var roles = []models.Role{
@@ -79,7 +78,6 @@ func Migrate(db *gorm.DB) {
 				log.Fatal("Failed to Create OrderState")
 			}
 		}
-
 	}
 
 }

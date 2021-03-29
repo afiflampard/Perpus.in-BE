@@ -29,7 +29,12 @@ var CreateAccount = func(w http.ResponseWriter, r *http.Request) {
 		helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Request")
 	}
 	_, resp := newUser.Create(GetDb())
+	conn, err := GetDb().DB()
+	if err != nil {
+		defer conn.Close()
+	}
 	helpers.ResponseWithJson(w, 200, resp)
+
 }
 
 var Authenticate = func(w http.ResponseWriter, r *http.Request) {
@@ -41,6 +46,10 @@ var Authenticate = func(w http.ResponseWriter, r *http.Request) {
 	}
 	resp, err := userLogin.Login(GetDb(), userLogin.Mobile, userLogin.Email, userLogin.Password)
 	helpers.ResponseWithJson(w, 200, resp)
+	conn, err := GetDb().DB()
+	if err != nil {
+		defer conn.Close()
+	}
 }
 
 var GetUserById = func(w http.ResponseWriter, r *http.Request) {
@@ -54,6 +63,10 @@ var GetUserById = func(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := user.GetUserById(GetDb(), uint(id))
 	helpers.ResponseWithJson(w, 200, resp)
+	conn, err := GetDb().DB()
+	if err != nil {
+		defer conn.Close()
+	}
 
 }
 
@@ -65,6 +78,10 @@ var GetUsers = func(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 	}
 	helpers.ResponseWithJson(w, 200, resp)
+	conn, err := GetDb().DB()
+	if err != nil {
+		defer conn.Close()
+	}
 }
 
 var UpdateUsers = func(w http.ResponseWriter, r *http.Request) {
@@ -82,6 +99,10 @@ var UpdateUsers = func(w http.ResponseWriter, r *http.Request) {
 	if resp != nil {
 		helpers.ResponseWithJson(w, 200, resp)
 	}
+	conn, err := GetDb().DB()
+	if err != nil {
+		defer conn.Close()
+	}
 }
 
 var UpdatePhoto = func(w http.ResponseWriter, r *http.Request) {
@@ -96,6 +117,10 @@ var UpdatePhoto = func(w http.ResponseWriter, r *http.Request) {
 	if resp != nil {
 		helpers.ResponseWithJson(w, 200, resp)
 	}
+	conn, err := GetDb().DB()
+	if err != nil {
+		defer conn.Close()
+	}
 }
 
 var DeleteUser = func(w http.ResponseWriter, r *http.Request) {
@@ -108,6 +133,10 @@ var DeleteUser = func(w http.ResponseWriter, r *http.Request) {
 	resp, err := user.DeleteUserByID(GetDb(), uint(id))
 	if resp != nil {
 		helpers.ResponseWithJson(w, 200, resp)
+	}
+	conn, err := GetDb().DB()
+	if err != nil {
+		defer conn.Close()
 	}
 
 }

@@ -28,6 +28,10 @@ var BorrowBuku = func(w http.ResponseWriter, r *http.Request) {
 		helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Request")
 	}
 	helpers.ResponseWithJson(w, http.StatusAccepted, resp)
+	conn, err := GetDb().DB()
+	if err != nil {
+		defer conn.Close()
+	}
 }
 
 var ReturnBook = func(w http.ResponseWriter, r *http.Request) {
@@ -46,6 +50,10 @@ var ReturnBook = func(w http.ResponseWriter, r *http.Request) {
 		helpers.ResponseWithError(w, http.StatusBadRequest, "Invalid Input")
 	}
 	helpers.ResponseWithJson(w, http.StatusAccepted, resp)
+	conn, err := GetDb().DB()
+	if err != nil {
+		defer conn.Close()
+	}
 
 }
 var ListBorrow = func(w http.ResponseWriter, r *http.Request) {
@@ -57,6 +65,10 @@ var ListBorrow = func(w http.ResponseWriter, r *http.Request) {
 	}
 	//
 	helpers.ResponseWithJson(w, http.StatusAccepted, resp)
+	conn, err := GetDb().DB()
+	if err != nil {
+		defer conn.Close()
+	}
 }
 
 var ListReturnBook = func(w http.ResponseWriter, r *http.Request) {
@@ -67,4 +79,8 @@ var ListReturnBook = func(w http.ResponseWriter, r *http.Request) {
 		helpers.ResponseWithError(w, http.StatusBadRequest, "Not Found")
 	}
 	helpers.ResponseWithJson(w, http.StatusAccepted, resp)
+	conn, err := GetDb().DB()
+	if err != nil {
+		defer conn.Close()
+	}
 }
